@@ -20,13 +20,7 @@ class Settings(BaseSettings):
     DB_USER: str = os.getenv("DB_USER")
     DB_PASS: str = os.getenv("DB_PASS")
     DB_PORT: str = os.getenv("DB_PORT")
-    database_uri: str = (
-        f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@/{DB_NAME}"
-        + "?host="
-        + ",".join(DB_HOST.split(","))
-        + "&port="
-        + ",".join(DB_PORT.split(","))
-    )
+    database_uri: str = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 
 @lru_cache
