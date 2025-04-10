@@ -12,6 +12,7 @@ load_dotenv(env_path)
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="DUGA_")
 
+    project_name: str = "duga backend"
     api_version: str = "/api/v1"
     env: str = ENV
 
@@ -21,6 +22,11 @@ class Settings(BaseSettings):
     DB_PASS: str = os.getenv("DB_PASS")
     DB_PORT: str = os.getenv("DB_PORT")
     database_uri: str = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+    # jwt
+    secret_key: str = os.getenv("SECRET_KEY")
+    algorithm: str = os.getenv("ALGORITHM")
+    access_token_expire_days: int = os.getenv("ACCESS_TOKEN_EXPIRE_DAYS")
 
 
 @lru_cache

@@ -17,9 +17,9 @@ class User(BaseModel):
 
     phone_number = Column(String(20), unique=True, nullable=False)
     email = Column(String(255), unique=True, nullable=True)
-    city = Column(String(255), nullable=False)
+    city = Column(String(255), nullable=True)
     is_phone_verified = Column(Boolean, default=False)
-    full_name = Column(String(255))
+    full_name = Column(String(255), nullable=True)
     preferences = Column(JSON, nullable=True)
 
     swipes = relationship("Swipe", back_populates="user", cascade="all, delete-orphan")
