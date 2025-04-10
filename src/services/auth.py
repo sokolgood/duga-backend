@@ -18,7 +18,6 @@ class AuthService:
         algorithm: str,
         token_expire_days: int,
     ) -> None:
-        self.session = session
         self.user_repo = UserRepository(session)
         self.secret_key = secret_key
         self.algorithm = algorithm
@@ -43,7 +42,13 @@ class AuthService:
         user = await self.user_repo.get_by_phone(phone_number)
         if not user:
             # Если пользователя нет, создаем его
-            user = User(phone_number=phone_number, is_phone_verified=True)
+            user = User(
+                phone_number=phone_number,
+                is_phone_verified=True,
+                # пока работаем только с Москвой
+                city="moscow",
+                preferences=[],  # Пустой список интересов
+            )
             user = await self.user_repo.create(user)
 
         await self.user_repo.delete_verification(verification)

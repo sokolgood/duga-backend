@@ -6,6 +6,7 @@ from src.core.config import Settings, get_settings
 from src.core.database import get_session
 from src.models import User
 from src.services.auth import AuthService
+from src.services.users import UserService
 
 security = HTTPBearer()
 
@@ -26,3 +27,9 @@ async def get_current_user(
     auth_service: AuthService = Depends(get_auth_service),
 ) -> User:
     return await auth_service.get_current_user(credentials.credentials)
+
+
+def get_user_service(
+    session: AsyncSession = Depends(get_session),
+) -> UserService:
+    return UserService(session=session)
