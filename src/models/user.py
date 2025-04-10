@@ -24,6 +24,7 @@ class User(BaseModel):
 
     swipes = relationship("Swipe", back_populates="user", cascade="all, delete-orphan")
     routes = relationship("Route", back_populates="user", cascade="all, delete-orphan")
+    location_interactions = relationship("UserLocationInteraction", back_populates="user", cascade="all, delete-orphan")
 
 
 class PhoneVerification(BaseModel):

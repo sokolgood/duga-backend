@@ -28,6 +28,14 @@ class Settings(BaseSettings):
     algorithm: str = os.getenv("ALGORITHM")
     access_token_expire_days: int = os.getenv("ACCESS_TOKEN_EXPIRE_DAYS")
 
+    # s3
+    s3_params: dict = {
+        "aws_access_key_id": os.getenv("AWS_ACCESS_KEY_ID"),
+        "aws_secret_access_key": os.getenv("AWS_SECRET_ACCESS_KEY"),
+        "region_name": os.getenv("AWS_REGION"),
+    }
+    s3_bucket: str = os.getenv("AWS_BUCKET_NAME")
+
 
 @lru_cache
 def get_settings() -> Settings:

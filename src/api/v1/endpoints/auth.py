@@ -4,7 +4,7 @@ from src.api.deps import get_auth_service
 from src.schemas.auth import PhoneNumberRequest, TokenResponse, VerificationRequest
 from src.services.auth import AuthService
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/request-code", status_code=status.HTTP_200_OK)

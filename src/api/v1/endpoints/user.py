@@ -3,9 +3,9 @@ from fastapi import APIRouter, Depends
 from src.api.deps import get_current_user, get_user_service
 from src.models import User
 from src.schemas.user import UserResponse, UserUpdate
-from src.services.users import UserService
+from src.services.user import UserService
 
-router = APIRouter()
+router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/me", response_model=UserResponse)
