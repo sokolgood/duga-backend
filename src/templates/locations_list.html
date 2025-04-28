@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление локациями</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/tags.css" rel="stylesheet">
+    <style>
+        .location-card {
+            margin-bottom: 2rem;
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .location-card:hover {
+            transform: translateY(-5px);
+        }
+        .location-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+        .location-placeholder {
+            width: 100%;
+            height: 300px;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .carousel-inner {
+            border-radius: 8px 8px 0 0;
+        }
+        .carousel-control-prev,
+        .carousel-control-next {
+            width: 10%;
+        }
+        .carousel-indicators {
+            margin-bottom: 0.5rem;
+        }
+        .card-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 1rem;
+        }
+        .btn-delete {
+            color: #dc3545;
+            border: none;
+            background: none;
+            padding: 0;
+        }
+        .btn-delete:hover {
+            color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Управление локациями</h1>
+            <a href="/api/v1/web/locations/new" class="btn btn-primary">Добавить локацию</a>
+        </div>
+
+        <div class="row" id="locations-container">
+            <!-- Локации будут добавлены здесь через JavaScript -->
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения удаления -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Подтверждение удаления</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Вы действительно хотите удалить локацию "<span id="deleteLocationName"></span>"?</p>
+                    <p class="text-danger">Это действие нельзя отменить.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-danger" id="confirmDelete">Удалить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <template id="location-template">
+        <div class="col-md-4 location-card">
+            <div class="card shadow-sm h-100">
+                <div class="carousel slide" data-bs-ride="false">
+                    <div class="carousel-inner">
+                        <div class="location-placeholder">
+                            <span class="text-muted">Нет фото</span>
+                        </div>
+                    </div>
+                    <button class="carousel-control-prev" type="button" data-bs-target="" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Предыдущее</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Следующее</span>
+                    </button>
+                    <div class="carousel-indicators">
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title"></h5>
+                    <p class="card-text address text-muted"></p>
+                    <div class="categories-tags">
+                        <div class="categories"></div>
+                        <div class="tags"></div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-delete delete-location">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let deleteModal;
+        let locationToDelete = null;
+
+        // Загрузка локаций при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLocations();
+            deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+
+            // Обработчик подтверждения удаления
+            document.getElementById('confirmDelete').addEventListener('click', async () => {
+                if (locationToDelete) {
+                    await deleteLocation(locationToDelete.id);
+                    deleteModal.hide();
+                    await loadLocations(); // Перезагружаем список
+                }
+            });
+        });
+
+        async function loadLocations() {
+            try {
+                const response = await fetch('/api/v1/locations');
+                if (!response.ok) {
+                    throw new Error('Ошибка при загрузке локаций');
+                }
+                const locations = await response.json();
+                displayLocations(locations);
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Не удалось загрузить локации: ' + error.message);
+            }
+        }
+
+        async function deleteLocation(locationId) {
+            try {
+                const response = await fetch(`/api/v1/locations/${locationId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Ошибка при удалении локации');
+                }
+
+            } catch (error) {
+                console.error('Ошибка при удалении:', error);
+                alert('Не удалось удалить локацию: ' + error.message);
+            }
+        }
+
+        function showDeleteConfirmation(location) {
+            locationToDelete = location;
+            document.getElementById('deleteLocationName').textContent = location.name;
+            deleteModal.show();
+        }
+
+        function displayLocations(locations) {
+            const container = document.getElementById('locations-container');
+            container.innerHTML = ''; // Очищаем контейнер
+            const template = document.getElementById('location-template');
+
+            locations.forEach((location, index) => {
+                const clone = template.content.cloneNode(true);
+                const card = clone.querySelector('.location-card');
+
+                // Добавляем обработчик клика на всю карточку
+                card.onclick = (e) => {
+                    // Игнорируем клики по кнопке удаления и элементам карусели
+                    if (e.target.closest('.delete-location') ||
+                        e.target.closest('.carousel-control-prev') ||
+                        e.target.closest('.carousel-control-next') ||
+                        e.target.closest('.carousel-indicators')) {
+                        e.stopPropagation();
+                        return;
+                    }
+                    window.location.href = `/api/v1/web/locations/${location.id}/edit`;
+                };
+
+                // Обработчик для кнопки удаления
+                const deleteBtn = clone.querySelector('.delete-location');
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    showDeleteConfirmation(location);
+                };
+
+                // Настраиваем карусель
+                if (location.photos && location.photos.length > 0) {
+                    const carousel = clone.querySelector('.carousel');
+                    const carouselInner = carousel.querySelector('.carousel-inner');
+                    const indicators = carousel.querySelector('.carousel-indicators');
+
+                    // Уникальный ID для карусели
+                    const carouselId = `carousel-${location.id}`;
+                    carousel.id = carouselId;
+
+                    // Настраиваем кнопки навигации
+                    carousel.querySelector('.carousel-control-prev').dataset.bsTarget = `#${carouselId}`;
+                    carousel.querySelector('.carousel-control-next').dataset.bsTarget = `#${carouselId}`;
+
+                    // Удаляем placeholder
+                    carouselInner.innerHTML = '';
+
+                    // Добавляем фотографии
+                    location.photos.forEach((photo, photoIndex) => {
+                        // Добавляем индикатор
+                        const indicator = document.createElement('button');
+                        indicator.type = 'button';
+                        indicator.dataset.bsTarget = `#${carouselId}`;
+                        indicator.dataset.bsSlideTo = photoIndex;
+                        indicator.setAttribute('aria-label', `Слайд ${photoIndex + 1}`);
+                        if (photoIndex === 0) indicator.classList.add('active');
+                        indicators.appendChild(indicator);
+
+                        // Добавляем слайд
+                        const slide = document.createElement('div');
+                        slide.className = `carousel-item${photoIndex === 0 ? ' active' : ''}`;
+
+                        const img = document.createElement('img');
+                        img.src = photo.photo_url;
+                        img.className = 'location-image';
+                        img.alt = photo.caption || `Фото ${photoIndex + 1}`;
+
+                        slide.appendChild(img);
+                        carouselInner.appendChild(slide);
+                    });
+
+                    // Скрываем кнопки навигации, если фото только одно
+                    if (location.photos.length === 1) {
+                        carousel.querySelector('.carousel-control-prev').style.display = 'none';
+                        carousel.querySelector('.carousel-control-next').style.display = 'none';
+                        carousel.querySelector('.carousel-indicators').style.display = 'none';
+                    }
+                }
+
+                // Заполняем информацию
+                clone.querySelector('.card-title').textContent = location.name;
+                clone.querySelector('.address').textContent = location.address || 'Адрес не указан';
+
+                // Добавляем категории
+                const categoriesDiv = clone.querySelector('.categories');
+                location.categories.forEach(category => {
+                    const badge = document.createElement('span');
+                    badge.className = 'category-badge';
+                    badge.textContent = category;
+                    categoriesDiv.appendChild(badge);
+                });
+
+                // Добавляем теги
+                const tagsDiv = clone.querySelector('.tags');
+                if (location.tags) {
+                    location.tags.forEach(tag => {
+                        const badge = document.createElement('span');
+                        badge.className = 'tag-badge';
+                        badge.textContent = tag;
+                        tagsDiv.appendChild(badge);
+                    });
+                }
+
+                container.appendChild(clone);
+            });
+        }
+    </script>
+</body>
+</html>

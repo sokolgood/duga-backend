@@ -54,7 +54,12 @@ def get_s3_service() -> S3Service:
     return MockS3Service()
 
 
+def get_base_url() -> str:
+    return "http://localhost:8080"
+
+
 def get_location_service(
     session: AsyncSession = Depends(get_session),
+    base_url: str = Depends(get_base_url),
 ) -> LocationService:
-    return LocationService(session=session)
+    return LocationService(session=session, base_url=base_url)

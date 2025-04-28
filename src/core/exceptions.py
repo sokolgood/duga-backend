@@ -1,3 +1,6 @@
+from fastapi import HTTPException, status
+
+
 class UserAlreadyExistsError(Exception):
     pass
 
@@ -10,11 +13,25 @@ class UserNotFoundError(Exception):
     pass
 
 
-class LocationNotFoundError(Exception):
-    pass
+class LocationNotFoundError(HTTPException):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Location not found",
+        )
 
 
-class InvalidLocationDataError(Exception):
+class InvalidLocationDataError(HTTPException):
     def __init__(self, detail: str) -> None:
-        self.detail = detail
-        super().__init__(detail)
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
+        )
+
+
+class PhotoNotFoundError(HTTPException):
+    def __init__(self, detail: str = "Photo not found") -> None:
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=detail,
+        )

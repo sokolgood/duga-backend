@@ -7,6 +7,7 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    Integer,
     String,
 )
 from sqlalchemy.orm import relationship
@@ -38,7 +39,7 @@ class Location(BaseModel):
     rating = Column(Float, default=0.0)
 
     swipes = relationship("Swipe", back_populates="location", cascade="all, delete-orphan")
-    photos = relationship("Photo", back_populates="location", cascade="all, delete-orphan")
+    photos = relationship("Photo", back_populates="location", cascade="all, delete-orphan", order_by="Photo.order")
     route_associations = relationship("RouteLocation", back_populates="location", cascade="all, delete-orphan")
     user_interactions = relationship("UserLocationInteraction", back_populates="location", cascade="all, delete-orphan")
 
@@ -49,6 +50,7 @@ class Photo(BaseModel):
     location_id = Column(UUID, ForeignKey("locations.id"), nullable=False)
     photo_url = Column(String(512), nullable=False)
     caption = Column(String(255), nullable=True)
+    order = Column(Integer, nullable=False, default=0)
 
     location = relationship("Location", back_populates="photos")
 

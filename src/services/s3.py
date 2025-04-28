@@ -8,7 +8,7 @@ class S3Service:
         self.s3_client = boto3.client(**s3_params)
         self.bucket_name = s3_bucket
 
-    async def upload_photo(self, file: UploadFile, path: str) -> str:
+    async def upload_file(self, file: UploadFile, path: str) -> str:
         """Загружает фото в S3 и возвращает URL"""
         try:
             await self.s3_client.upload_fileobj(file.file, self.bucket_name, path)
@@ -19,7 +19,7 @@ class S3Service:
             # TODO: добавить специальное исключение для ошибок S3
             raise Exception(f"Ошибка загрузки файла в S3: {e!s}")
 
-    async def delete_photo(self, path: str) -> None:
+    async def delete_file(self, path: str) -> None:
         """Удаляет фото из S3"""
         try:
             await self.s3_client.delete_object(Bucket=self.bucket_name, Key=path)

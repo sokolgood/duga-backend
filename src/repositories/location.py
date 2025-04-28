@@ -27,20 +27,31 @@ class LocationRepository:
         return result.scalar_one_or_none()
 
     async def get_many(self, skip: int = 0, limit: int = 100, category: str | None = None) -> list[Location]:
-        """Получает список локаций с фильтрацией по категории"""
-        query = select(Location).options(selectinload(Location.photos)).offset(skip).limit(limit)
+        """Получает список локаций с пагинацией и фильтрацией по категории"""
+        query = select(Location).options(selectinload(Location.photos))
 
         if category:
             query = query.where(Location.categories.contains([category]))
 
+        query = query.offset(skip).limit(limit)
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
     async def update(self, location: Location, update_data: dict) -> Location:
         """Обновляет данные локации"""
-        for field, value in update_data.items():
-            setattr(location, field, value)
+        for key, value in update_data.items():
+            if value is not None:
+                setattr(location, key, value)
         return location
+
+    async def update_photo(self, photo: Photo) -> Photo:
+        """Обновляет данные фотографии"""
+        self.session.add(photo)
+        return photo
+
+    async def delete_photo(self, photo: Photo) -> None:
+        """Удаляет фотографию из БД"""
+        await self.session.delete(photo)
 
     async def delete(self, location: Location) -> None:
         """Удаляет локацию из БД"""
@@ -55,5 +66,5 @@ class LocationRepository:
         await self.session.rollback()
 
     async def refresh(self, location: Location) -> None:
-        """Обновляет состояние объекта из БД"""
+        """Обновляет данные локации из БД"""
         await self.session.refresh(location)
