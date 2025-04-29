@@ -60,6 +60,6 @@ def get_base_url() -> str:
 
 def get_location_service(
     session: AsyncSession = Depends(get_session),
-    base_url: str = Depends(get_base_url),
+    settings: Settings = Depends(get_settings),
 ) -> LocationService:
-    return LocationService(session=session, base_url=base_url)
+    return LocationService(session=session, base_url=settings.file_storage_path)

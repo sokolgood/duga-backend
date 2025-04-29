@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     }
     s3_bucket: str = os.getenv("AWS_BUCKET_NAME")
 
+    # file storage
+    file_storage_path: str = os.getenv("FILE_STORAGE_PATH")
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -8,6 +8,8 @@ services:
       - ENV=prod
     ports:
       - "8080:8080"
+    volumes:
+      - data:/app/data
     healthcheck:
       test: curl --fail http://localhost:8080/health || exit 1
       interval: 60s
@@ -20,3 +22,6 @@ services:
         delay: 30s
         max_attempts: 2
         window: 60s
+
+volumes:
+  data:

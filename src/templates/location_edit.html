@@ -12,12 +12,34 @@
         .photo-container {
             position: relative;
             margin-bottom: 1rem;
+            cursor: move;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-radius: 8px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+        .photo-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .photo-container.sortable-ghost {
+            opacity: 0.4;
+        }
+        .photo-container.sortable-chosen {
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            transform: scale(1.02);
+        }
+        .photo-preview-wrapper {
+            position: relative;
+            cursor: move;
         }
         .photo-preview {
             width: 200px;
             height: 200px;
             object-fit: cover;
-            border-radius: 8px;
+            border-radius: 8px 8px 0 0;
+            pointer-events: none;
         }
         .photo-actions {
             position: absolute;
@@ -25,6 +47,11 @@
             right: 10px;
             display: flex;
             gap: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .photo-container:hover .photo-actions {
+            opacity: 1;
         }
         .photo-actions button {
             background: rgba(255, 255, 255, 0.9);
@@ -36,10 +63,21 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .photo-actions button:hover {
+            transform: scale(1.1);
         }
         .photo-caption {
             margin-top: 0.5rem;
             width: 200px;
+            cursor: text;
+            border-top: 1px solid #dee2e6;
+            padding-top: 0.5rem;
+        }
+        .photo-caption:focus {
+            cursor: text;
+            pointer-events: auto;
         }
         #photos-grid {
             display: grid;
@@ -135,36 +173,33 @@
                     Рейтинг должен быть от 0 до 5
                 </div>
             </div>
-
-            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
         </form>
 
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title">Фотографии</h5>
-                <div class="mb-3">
-                    <input type="file" class="form-control" id="photo-upload" accept="image/*" multiple>
-                </div>
-                <div id="photos-grid">
-                    <!-- Фотографии будут добавлены здесь через JavaScript -->
-                </div>
+        <div class="mb-4">
+            <h5>Фотографии</h5>
+            <div class="mb-3">
+                <input type="file" class="form-control" id="photo-upload" accept="image/*" multiple>
             </div>
+            <div id="photos-grid">
+                <!-- Фотографии будут добавлены здесь через JavaScript -->
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mb-4">
+            <button type="submit" form="location-form" class="btn btn-primary">Сохранить изменения</button>
+            <button type="button" class="btn btn-secondary" id="cancel-button">Отмена</button>
         </div>
     </div>
 
     <template id="photo-template">
         <div class="photo-container" draggable="true">
-            <img class="photo-preview">
-            <div class="photo-actions">
-                <button class="drag-handle" title="Перетащить">
-                    <i class="fas fa-grip-vertical"></i>
-                </button>
-                <button class="edit-caption" title="Редактировать подпись">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="delete-photo" title="Удалить">
-                    <i class="fas fa-trash"></i>
-                </button>
+            <div class="photo-preview-wrapper">
+                <img class="photo-preview">
+                <div class="photo-actions">
+                    <button class="delete-photo" title="Удалить">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
             <input type="text" class="form-control photo-caption" placeholder="Подпись к фото">
         </div>
@@ -176,6 +211,11 @@
     <script>
         let locationId;
         let photos = [];
+        let originalData = null;
+        let newPhotos = [];
+        let deletedPhotos = new Set();
+        let modifiedCaptions = new Map();
+        let photoOrder = [];
 
         document.addEventListener('DOMContentLoaded', () => {
             locationId = window.location.pathname.split('/').slice(-2)[0];
@@ -199,17 +239,62 @@
             setupPhotoUpload();
             setupFormSubmit();
             setupPhotosGrid();
+            setupCancelButton();
 
             // Загружаем данные
             loadLocation();
         });
+
+        function setupCancelButton() {
+            document.getElementById('cancel-button').addEventListener('click', () => {
+                if (confirm('Вы уверены, что хотите отменить все изменения?')) {
+                    resetForm();
+                }
+            });
+        }
+
+        function resetForm() {
+            // Сбрасываем все локальные изменения
+            newPhotos = [];
+            deletedPhotos.clear();
+            modifiedCaptions.clear();
+            
+            if (originalData) {
+                // Восстанавливаем данные формы
+                document.getElementById('name').value = originalData.name || '';
+                document.getElementById('address').value = originalData.address || '';
+                document.getElementById('maps_url').value = originalData.maps_url || '';
+                document.getElementById('instagram_url').value = originalData.instagram_url || '';
+                document.getElementById('working_hours').value = originalData.working_hours || '';
+                document.getElementById('description').value = originalData.description || '';
+                document.getElementById('rating').value = originalData.rating || '';
+                
+                // Восстанавливаем категории и теги
+                document.getElementById('categories-hidden').value = originalData.categories ? originalData.categories.join(',') : '';
+                document.getElementById('tags-hidden').value = originalData.tags ? originalData.tags.join(',') : '';
+                
+                // Перезагружаем менеджеры тегов
+                new TagsManager('categories-input', 'categories-list', 'categories-hidden', true);
+                new TagsManager('tags-input', 'tags-list', 'tags-hidden', false);
+                
+                // Восстанавливаем фотографии
+                photos = [...originalData.photos];
+                renderPhotos();
+            }
+
+            // Сбрасываем состояние валидации формы
+            document.getElementById('location-form').classList.remove('was-validated');
+        }
 
         async function loadLocation() {
             try {
                 const response = await fetch(`/api/v1/locations/${locationId}`);
                 if (!response.ok) throw new Error('Ошибка при загрузке локации');
                 const location = await response.json();
-
+                
+                // Сохраняем оригинальные данные
+                originalData = JSON.parse(JSON.stringify(location));
+                
                 // Заполняем форму
                 document.getElementById('name').value = location.name || '';
                 document.getElementById('address').value = location.address || '';
@@ -224,22 +309,12 @@
                 document.getElementById('tags-hidden').value = location.tags ? location.tags.join(',') : '';
 
                 // Перезагружаем менеджеры тегов
-                const categoriesManager = new TagsManager(
-                    'categories-input',
-                    'categories-list',
-                    'categories-hidden',
-                    true
-                );
-
-                const tagsManager = new TagsManager(
-                    'tags-input',
-                    'tags-list',
-                    'tags-hidden',
-                    false
-                );
+                new TagsManager('categories-input', 'categories-list', 'categories-hidden', true);
+                new TagsManager('tags-input', 'tags-list', 'tags-hidden', false);
 
                 // Загружаем фотографии
                 photos = location.photos || [];
+                photoOrder = photos.map(photo => photo.id);
                 renderPhotos();
             } catch (error) {
                 console.error('Ошибка при загрузке локации:', error);
@@ -249,31 +324,23 @@
 
         function setupPhotoUpload() {
             const input = document.getElementById('photo-upload');
-            input.addEventListener('change', async () => {
-                const formData = new FormData();
-                for (const file of input.files) {
-                    formData.append('photos', file);
-                }
-
-                try {
-                    const response = await fetch(`/api/v1/locations/${locationId}/photos`, {
-                        method: 'POST',
-                        body: formData
+            input.addEventListener('change', () => {
+                const files = Array.from(input.files);
+                newPhotos.push(...files);
+                
+                // Добавляем временные превью
+                files.forEach(file => {
+                    const tempId = 'temp_' + Math.random().toString(36).substr(2, 9);
+                    photos.push({
+                        id: tempId,
+                        photo_url: URL.createObjectURL(file),
+                        caption: '',
+                        isTemp: true
                     });
-
-                    if (!response.ok) {
-                        const error = await response.json();
-                        throw new Error(error.detail || 'Ошибка при загрузке фотографий');
-                    }
-
-                    const result = await response.json();
-                    photos = result.photos;
-                    renderPhotos();
-                    input.value = ''; // Очищаем input
-                } catch (error) {
-                    console.error('Ошибка при загрузке фотографий:', error);
-                    alert(error.message);
-                }
+                });
+                
+                renderPhotos();
+                input.value = ''; // Очищаем input
             });
         }
 
@@ -288,48 +355,94 @@
                     return;
                 }
 
-                const formData = new FormData(form);
-                const locationData = {};
-
-                for (const [key, value] of formData.entries()) {
-                    if (value.trim()) {
-                        locationData[key] = value.trim();
-                    }
-                }
-
-                // Преобразование строк в массивы
-                if (locationData.categories) {
-                    locationData.categories = locationData.categories.split(',').map(c => c.trim());
-                }
-                if (locationData.tags) {
-                    locationData.tags = locationData.tags.split(',').map(t => t.trim());
-                }
-
-                // Очистка пустых значений
-                for (const key in locationData) {
-                    if (!locationData[key] ||
-                        (Array.isArray(locationData[key]) && locationData[key].length === 0)) {
-                        delete locationData[key];
-                    }
-                }
-
                 try {
-                    const response = await fetch(`/api/v1/locations/${locationId}`, {
+                    // Сначала обновляем основные данные локации
+                    const formData = new FormData(form);
+                    const locationData = {};
+
+                    for (const [key, value] of formData.entries()) {
+                        if (value.trim()) {
+                            locationData[key] = value.trim();
+                        }
+                    }
+
+                    if (locationData.categories) {
+                        locationData.categories = locationData.categories.split(',').map(c => c.trim());
+                    }
+                    if (locationData.tags) {
+                        locationData.tags = locationData.tags.split(',').map(t => t.trim());
+                    }
+
+                    // Очистка пустых значений
+                    for (const key in locationData) {
+                        if (!locationData[key] ||
+                            (Array.isArray(locationData[key]) && locationData[key].length === 0)) {
+                            delete locationData[key];
+                        }
+                    }
+
+                    // Обновляем основные данные
+                    const updateResponse = await fetch(`/api/v1/locations/${locationId}`, {
                         method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(locationData)
                     });
 
-                    if (!response.ok) {
-                        const error = await response.json();
+                    if (!updateResponse.ok) {
+                        const error = await updateResponse.json();
                         throw new Error(error.detail || 'Ошибка при обновлении локации');
+                    }
+
+                    // Загружаем новые фотографии
+                    if (newPhotos.length > 0) {
+                        const photoFormData = new FormData();
+                        newPhotos.forEach(file => {
+                            photoFormData.append('photos', file);
+                        });
+
+                        const uploadResponse = await fetch(`/api/v1/locations/${locationId}/photos`, {
+                            method: 'POST',
+                            body: photoFormData
+                        });
+
+                        if (!uploadResponse.ok) {
+                            throw new Error('Ошибка при загрузке фотографий');
+                        }
+                    }
+
+                    // Удаляем фотографии
+                    for (const photoId of deletedPhotos) {
+                        if (!photoId.startsWith('temp_')) {
+                            await fetch(`/api/v1/locations/${locationId}/photos/${photoId}`, {
+                                method: 'DELETE'
+                            });
+                        }
+                    }
+
+                    // Обновляем подписи к фотографиям
+                    for (const [photoId, caption] of modifiedCaptions.entries()) {
+                        if (!photoId.startsWith('temp_')) {
+                            await fetch(`/api/v1/locations/${locationId}/photos/${photoId}/caption`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ caption })
+                            });
+                        }
+                    }
+
+                    // Обновляем порядок фотографий
+                    const finalPhotoOrder = photoOrder.filter(id => !id.startsWith('temp_'));
+                    if (finalPhotoOrder.length > 0) {
+                        await fetch(`/api/v1/locations/${locationId}/photos/reorder`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ photo_order: finalPhotoOrder })
+                        });
                     }
 
                     window.location.href = '/api/v1/web/locations';
                 } catch (error) {
-                    console.error('Ошибка при обновлении локации:', error);
+                    console.error('Ошибка при сохранении:', error);
                     alert(error.message);
                 }
             });
@@ -339,33 +452,12 @@
             const grid = document.getElementById('photos-grid');
             new Sortable(grid, {
                 animation: 150,
-                handle: '.drag-handle',
-                onEnd: async () => {
-                    const photoOrder = Array.from(grid.children).map(container => {
-                        return container.dataset.photoId;
-                    });
-
-                    try {
-                        const response = await fetch(`/api/v1/locations/${locationId}/photos/reorder`, {
-                            method: 'PATCH',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ photo_order: photoOrder })
-                        });
-
-                        if (!response.ok) {
-                            const error = await response.json();
-                            throw new Error(error.detail || 'Ошибка при изменении порядка фотографий');
-                        }
-
-                        const result = await response.json();
-                        photos = result.photos;
-                    } catch (error) {
-                        console.error('Ошибка при изменении порядка фотографий:', error);
-                        alert(error.message);
-                        renderPhotos(); // Возвращаем исходный порядок
-                    }
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                handle: '.photo-preview-wrapper',
+                onEnd: () => {
+                    photoOrder = Array.from(grid.children).map(container => container.dataset.photoId);
                 }
             });
         }
@@ -376,74 +468,48 @@
             grid.innerHTML = '';
 
             photos.forEach(photo => {
+                if (deletedPhotos.has(photo.id)) return;
+
                 const clone = template.content.cloneNode(true);
                 const container = clone.querySelector('.photo-container');
                 const preview = clone.querySelector('.photo-preview');
                 const caption = clone.querySelector('.photo-caption');
                 const deleteBtn = clone.querySelector('.delete-photo');
-                const editBtn = clone.querySelector('.edit-caption');
 
                 container.dataset.photoId = photo.id;
                 preview.src = photo.photo_url;
                 preview.alt = photo.caption || 'Фото локации';
-                caption.value = photo.caption || '';
+                caption.value = modifiedCaptions.get(photo.id) || photo.caption || '';
 
-                deleteBtn.addEventListener('click', () => deletePhoto(photo.id));
-                editBtn.addEventListener('click', () => {
-                    const newCaption = prompt('Введите подпись к фото:', photo.caption || '');
-                    if (newCaption !== null) {
-                        updatePhotoCaption(photo.id, newCaption);
+                caption.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        caption.blur();
+                    }
+                });
+
+                caption.addEventListener('blur', () => {
+                    const newCaption = caption.value.trim();
+                    if (newCaption !== (photo.caption || '')) {
+                        modifiedCaptions.set(photo.id, newCaption);
+                    }
+                });
+
+                deleteBtn.addEventListener('click', () => {
+                    if (confirm('Вы уверены, что хотите удалить это фото?')) {
+                        deletedPhotos.add(photo.id);
+                        if (photo.isTemp) {
+                            const index = newPhotos.findIndex(f => f.name === photo.originalName);
+                            if (index !== -1) {
+                                newPhotos.splice(index, 1);
+                            }
+                        }
+                        renderPhotos();
                     }
                 });
 
                 grid.appendChild(clone);
             });
-        }
-
-        async function deletePhoto(photoId) {
-            if (!confirm('Вы уверены, что хотите удалить это фото?')) return;
-
-            try {
-                const response = await fetch(`/api/v1/locations/${locationId}/photos/${photoId}`, {
-                    method: 'DELETE'
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || 'Ошибка при удалении фото');
-                }
-
-                const result = await response.json();
-                photos = result.photos;
-                renderPhotos();
-            } catch (error) {
-                console.error('Ошибка при удалении фото:', error);
-                alert(error.message);
-            }
-        }
-
-        async function updatePhotoCaption(photoId, caption) {
-            try {
-                const response = await fetch(`/api/v1/locations/${locationId}/photos/${photoId}/caption`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ caption })
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || 'Ошибка при обновлении подписи');
-                }
-
-                const result = await response.json();
-                photos = result.photos;
-                renderPhotos();
-            } catch (error) {
-                console.error('Ошибка при обновлении подписи:', error);
-                alert(error.message);
-            }
         }
     </script>
 </body>
