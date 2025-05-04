@@ -258,7 +258,7 @@
             newPhotos = [];
             deletedPhotos.clear();
             modifiedCaptions.clear();
-            
+
             if (originalData) {
                 // Восстанавливаем данные формы
                 document.getElementById('name').value = originalData.name || '';
@@ -268,15 +268,15 @@
                 document.getElementById('working_hours').value = originalData.working_hours || '';
                 document.getElementById('description').value = originalData.description || '';
                 document.getElementById('rating').value = originalData.rating || '';
-                
+
                 // Восстанавливаем категории и теги
                 document.getElementById('categories-hidden').value = originalData.categories ? originalData.categories.join(',') : '';
                 document.getElementById('tags-hidden').value = originalData.tags ? originalData.tags.join(',') : '';
-                
+
                 // Перезагружаем менеджеры тегов
                 new TagsManager('categories-input', 'categories-list', 'categories-hidden', true);
                 new TagsManager('tags-input', 'tags-list', 'tags-hidden', false);
-                
+
                 // Восстанавливаем фотографии
                 photos = [...originalData.photos];
                 renderPhotos();
@@ -291,10 +291,10 @@
                 const response = await fetch(`/api/v1/locations/${locationId}`);
                 if (!response.ok) throw new Error('Ошибка при загрузке локации');
                 const location = await response.json();
-                
+
                 // Сохраняем оригинальные данные
                 originalData = JSON.parse(JSON.stringify(location));
-                
+
                 // Заполняем форму
                 document.getElementById('name').value = location.name || '';
                 document.getElementById('address').value = location.address || '';
@@ -327,7 +327,7 @@
             input.addEventListener('change', () => {
                 const files = Array.from(input.files);
                 newPhotos.push(...files);
-                
+
                 // Добавляем временные превью
                 files.forEach(file => {
                     const tempId = 'temp_' + Math.random().toString(36).substr(2, 9);
@@ -338,7 +338,7 @@
                         isTemp: true
                     });
                 });
-                
+
                 renderPhotos();
                 input.value = ''; // Очищаем input
             });
