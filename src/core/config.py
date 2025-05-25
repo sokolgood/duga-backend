@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     # file storage
     file_storage_path: str = os.getenv("FILE_STORAGE_PATH")
 
+    # redis
+    redis_host: str = os.getenv("REDIS_HOST")
+    redis_port: str = os.getenv("REDIS_PORT")
+    redis_pass: str = os.getenv("REDIS_PASS")
+
 
 @lru_cache
 def get_settings() -> Settings:

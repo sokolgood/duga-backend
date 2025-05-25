@@ -1,5 +1,6 @@
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import Settings, get_settings
@@ -8,9 +9,14 @@ from src.models import User
 from src.services.auth import AuthService
 from src.services.location import LocationService
 from src.services.s3 import S3Service
+from src.services.swipe import SwipeService
 from src.services.user import UserService
 
 security = HTTPBearer()
+
+
+def get_redis(settings: Settings = Depends(get_settings)) -> Redis:
+    return Redis(host=settings.redis_host, port=settings.redis_port, password=settings.redis_pass)
 
 
 def get_auth_service(
@@ -63,3 +69,10 @@ def get_location_service(
     settings: Settings = Depends(get_settings),
 ) -> LocationService:
     return LocationService(session=session, base_url=settings.file_storage_path)
+
+
+def get_swipe_service(
+    session: AsyncSession = Depends(get_session),
+    location_service: LocationService = Depends(get_location_service),
+) -> SwipeService:
+    return SwipeService(session=session, location_service=location_service)

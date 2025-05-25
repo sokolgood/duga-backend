@@ -1,5 +1,5 @@
 import logging
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException, UploadFile, status
 from pydantic import HttpUrl
@@ -302,3 +302,34 @@ class LocationService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при изменении порядка фотографий"
             )
+
+    async def get_location_by_id(self, location_id: UUID) -> Location | None:
+        """Получает локацию по ID"""
+        return await self.repository.get_by_id(location_id)
+
+    async def get_locations_by_ids(self, location_ids: list[UUID]) -> list[Location]:
+        """Получает информацию о нескольких локациях по их ID"""
+        if not location_ids:
+            return []
+
+        return await self.repository.get_by_ids(location_ids)
+
+    async def get_filtered_locations(
+        self,
+        exclude_ids: list[UUID] | None = None,
+        tags: list[str] | None = None,
+        coordinates: tuple[float, float] | None = None,
+        radius_km: float = 5.0,
+    ) -> list[Location]:
+        """
+        Получает отфильтрованный список локаций
+
+        Args:
+            exclude_ids: ID локаций, которые нужно исключить
+            tags: список тегов для фильтрации
+            coordinates: (lat, lng) координаты центра поиска
+            radius_km: радиус поиска в километрах
+        """
+        return await self.repository.get_filtered(
+            exclude_ids=exclude_ids, tags=tags, coordinates=coordinates, radius_km=radius_km
+        )

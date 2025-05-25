@@ -10,7 +10,7 @@ class UserBase(BaseModel):
     email: EmailStr | None = None
     city: str | None = None
     full_name: str | None = None
-    preferences: dict | None = None
+    preferences: list | None = None
 
 
 class UserCreate(UserBase):
@@ -21,7 +21,7 @@ class UserUpdate(BaseModel):
     email: EmailStr | None = None
     city: str | None = None
     full_name: str | None = None
-    preferences: dict | None = None
+    preferences: list | None = None
 
 
 class UserInDB(UserBase):
