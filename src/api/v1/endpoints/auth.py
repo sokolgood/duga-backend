@@ -11,7 +11,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def request_verification_code(
     phone_data: PhoneNumberRequest, auth_service: AuthService = Depends(get_auth_service)
 ) -> dict[str, str]:
-    await auth_service.send_verification_code(phone_data.phone_number)
+    await auth_service.send_verification_code(phone_data.phone)
     return {"message": "Код верификации отправлен"}
 
 
@@ -19,5 +19,5 @@ async def request_verification_code(
 async def verify_code(
     verification_data: VerificationRequest, auth_service: AuthService = Depends(get_auth_service)
 ) -> TokenResponse:
-    token = await auth_service.verify_code(verification_data.phone_number, verification_data.code)
+    token = await auth_service.verify_code(verification_data.phone, verification_data.code)
     return TokenResponse(access_token=token)

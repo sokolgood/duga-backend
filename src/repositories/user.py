@@ -31,13 +31,14 @@ class UserRepository:
         await self.session.refresh(user)
         return user
 
-    async def get_verification(self, phone_number: str) -> PhoneVerification | None:
+    async def get_verifications(self, phone_number: str) -> list[PhoneVerification]:
         result = await self.session.execute(
             select(PhoneVerification)
             .where(PhoneVerification.phone_number == phone_number)
             .where(PhoneVerification.expires_at > datetime.now())
+            .order_by(PhoneVerification.created_at.desc())
         )
-        return result.scalar_one_or_none()
+        return result.scalars().all()
 
     async def create_verification(self, verification: PhoneVerification) -> PhoneVerification:
         self.session.add(verification)

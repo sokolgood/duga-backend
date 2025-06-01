@@ -35,8 +35,16 @@ class AuthService:
         print(f"Verification code for {phone_number}: {code}")  # Для тестирования
 
     async def verify_code(self, phone_number: str, code: str) -> str:
-        verification = await self.user_repo.get_verification(phone_number)
-        if not verification or verification.code != code:
+        verifications = await self.user_repo.get_verifications(phone_number)
+
+        # Проверяем все активные коды
+        verification = None
+        for v in verifications:
+            if v.code == code:
+                verification = v
+                break
+
+        if not verification:
             raise InvalidVerificationCodeError()
 
         user = await self.user_repo.get_by_phone(phone_number)
@@ -51,7 +59,6 @@ class AuthService:
             )
             user = await self.user_repo.create(user)
 
-        await self.user_repo.delete_verification(verification)
         return self.create_access_token({"sub": str(user.id)})
 
     def create_access_token(self, data: dict) -> str:

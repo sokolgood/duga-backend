@@ -7,7 +7,7 @@ VerificationCode = Annotated[str, StringConstraints(pattern=r"^\d{4}$")]
 
 
 class PhoneNumberRequest(BaseModel):
-    phone_number: PhoneNumber
+    phone: PhoneNumber
 
 
 class VerificationRequest(PhoneNumberRequest):
