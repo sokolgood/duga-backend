@@ -37,7 +37,6 @@ jobs:
             -e REPO \
             -e REPO_PATH=/repo \
             -v "${{ github.workspace }}:/repo" \
-            -w /repo \
             ghcr.io/sokolgood/ai-coding-agent:latest \
             code \
               --issue "$ISSUE_NUMBER" \

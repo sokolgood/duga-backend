@@ -49,7 +49,6 @@ jobs:
             -e CI_CONCLUSION \
             -e REPO_PATH=/repo \
             -v "${{ github.workspace }}:/repo" \
-            -w /repo \
             ghcr.io/sokolgood/ai-coding-agent:latest \
             review \
               --pr "$PR_NUMBER"
