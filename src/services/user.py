@@ -1,13 +1,11 @@
-from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.database import get_session
 from src.models import User
 from src.repositories.user import UserRepository
 
 
 class UserService:
-    def __init__(self, session: AsyncSession = Depends(get_session)) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         self.user_repo = UserRepository(session)
 
     async def update_user(
