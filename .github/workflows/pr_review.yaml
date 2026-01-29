@@ -44,21 +44,44 @@ jobs:
             alpine:3.20 \
             sh -lc 'echo "inside container:"; pwd; ls -la; test -d .git && echo ".git exists"'
       
-      - name: Git push smoke test (temp)
+      # - name: Git push smoke test (temp)
+      #   env:
+      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     REPO: ${{ github.repository }}
+      #   run: |
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git checkout -b smoke/test-push-${{ github.run_id }}
+      #     echo "$(date)" > .smoke_push.txt
+      #     git add .smoke_push.txt
+      #     git commit -m "smoke: test push"
+      #     git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+      #     git push -u origin HEAD
+
+      - name: Docker git push smoke test (temp)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b smoke/test-push-${{ github.run_id }}
-          echo "$(date)" > .smoke_push.txt
-          git add .smoke_push.txt
-          git commit -m "smoke: test push"
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
-          git push -u origin HEAD
+          docker run --rm \
+            -e GH_TOKEN \
+            -e REPO \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            alpine:3.20 \
+            sh -lc '
+              apk add --no-cache git >/dev/null
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git checkout -b smoke/docker-push-${{ github.run_id }}
+              echo "docker push test $(date)" > .smoke_docker_push.txt
+              git add .smoke_docker_push.txt
+              git commit -m "smoke: docker push"
+              git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+              git push -u origin HEAD
+            '
 
-      
+
       # - name: Pull agent image
       #   run: docker pull ghcr.io/<OWNER>/<AGENT_IMAGE>:v0.1.0
       #
