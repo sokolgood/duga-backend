@@ -27,7 +27,7 @@ jobs:
 
       - name: Run Code Agent (issue -> PR)
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.BOT_TOKEN }}
           REPO: ${{ github.repository }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           BASE_BRANCH: ${{ github.event.repository.default_branch }}

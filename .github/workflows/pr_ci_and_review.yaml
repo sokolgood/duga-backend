@@ -38,7 +38,7 @@ jobs:
 
       - name: Run Reviewer Agent (comment/labels)
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.BOT_TOKEN }}
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           # опционально: можно прокинуть статус CI, если захочешь учитывать это в review worker
