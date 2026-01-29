@@ -71,15 +71,25 @@ jobs:
             alpine:3.20 \
             sh -lc '
               apk add --no-cache git >/dev/null
+
+              # Git security: allow working with mounted repo owned by different uid
+              git config --global --add safe.directory /work
+
+              cd /work
+              test -d .git || (echo "ERROR: .git not found in /work" && exit 1)
+
               git config user.name "github-actions[bot]"
               git config user.email "github-actions[bot]@users.noreply.github.com"
+
               git checkout -b smoke/docker-push-${{ github.run_id }}
               echo "docker push test $(date)" > .smoke_docker_push.txt
               git add .smoke_docker_push.txt
               git commit -m "smoke: docker push"
+
               git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
               git push -u origin HEAD
             '
+
 
 
       # - name: Pull agent image
