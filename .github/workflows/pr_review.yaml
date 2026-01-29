@@ -7,7 +7,7 @@ on:
 permissions:
   pull-requests: write
   issues: read
-  contents: read
+  contents: write # TODO: change to read
 
 concurrency:
   group: pr-review-${{ github.event.pull_request.number }}
@@ -43,7 +43,22 @@ jobs:
             -w /work \
             alpine:3.20 \
             sh -lc 'echo "inside container:"; pwd; ls -la; test -d .git && echo ".git exists"'
+      
+      - name: Git push smoke test (temp)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b smoke/test-push-${{ github.run_id }}
+          echo "$(date)" > .smoke_push.txt
+          git add .smoke_push.txt
+          git commit -m "smoke: test push"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          git push -u origin HEAD
 
+      
       # - name: Pull agent image
       #   run: docker pull ghcr.io/<OWNER>/<AGENT_IMAGE>:v0.1.0
       #
