@@ -35,6 +35,14 @@ jobs:
           echo "Example diff (base...HEAD):"
           git fetch origin "${{ github.event.pull_request.base.ref }}"
           git diff "origin/${{ github.event.pull_request.base.ref }}...HEAD" --name-only | head -n 50
+      
+      - name: Docker mount sanity check
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            alpine:3.20 \
+            sh -lc 'echo "inside container:"; pwd; ls -la; test -d .git && echo ".git exists"'
 
       # - name: Pull agent image
       #   run: docker pull ghcr.io/<OWNER>/<AGENT_IMAGE>:v0.1.0
