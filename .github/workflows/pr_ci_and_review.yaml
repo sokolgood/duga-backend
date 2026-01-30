@@ -34,7 +34,7 @@ jobs:
           poetry --version
 
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --no-root
 
       - name: Lint
         run: make lint
@@ -70,6 +70,7 @@ jobs:
             -e GH_TOKEN \
             -e LLM_API_KEY \
             -e LLM_BASE_URL \
+            -e LLM_MODEL_NAME=gpt-5-mini \
             -e REPO \
             -e CI_CONCLUSION \
             -e REPO_PATH=/repo \

@@ -38,6 +38,7 @@ jobs:
             -e GH_TOKEN \
             -e LLM_API_KEY \
             -e LLM_BASE_URL \
+            -e LLM_MODEL_NAME=gpt-5-mini \
             -e REPO \
             -e REPO_PATH=/repo \
             -v "${{ github.workspace }}:/repo" \
