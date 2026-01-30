@@ -16,11 +16,31 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
+
     steps:
-      - name: CI placeholder (always success)
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
         run: |
-          echo "CI placeholder: success"
-          exit 0
+          pip install poetry
+          poetry --version
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Lint
+        run: make lint
+
+      - name: Test
+        run: make test
 
   review:
     runs-on: ubuntu-latest
