@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import logging
+
 from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
