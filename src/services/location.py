@@ -1,7 +1,7 @@
 import logging
 from uuid import UUID, uuid4
 
-from fastapi import HTTPException, UploadFile, status
+from fastapi import UploadFile, status
 from pydantic import HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,7 +18,7 @@ class LocationService:
         self.session = session
         self.repository = LocationRepository(session)
         self.file_storage = LocalFileStorage()
-        self.base_url = base_url.rstrip("/")  # Убираем trailing slash если есть
+        self.base_url = base_url.rstrip("")  # Убираем trailing slash если есть
 
     async def create_location(
         self,
@@ -136,7 +136,7 @@ class LocationService:
         except Exception as e:
             await self.session.rollback()
             logger.error(f"Ошибка при удалении локации {location_id}: {e!s}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при удалении локации")
+            raise InvalidLocationDataError(detail="Ошибка при удалении локации")
 
     async def add_location_photos(self, location_id: str, files: list[UploadFile]) -> Location:
         """Добавляет фотографии к локации"""
@@ -180,9 +180,7 @@ class LocationService:
             raise
         except Exception as e:
             logger.error(f"Ошибка при добавлении фото к локации {location_id}: {e!s}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при добавлении фотографий"
-            )
+            raise InvalidLocationDataError(detail="Ошибка при добавлении фотографий")
 
     async def delete_location_photo(self, location_id: str, photo_id: str) -> Location:
         """Удаляет фотографию из локации"""
@@ -220,9 +218,7 @@ class LocationService:
         except Exception as e:
             await self.session.rollback()
             logger.error(f"Ошибка при удалении фото {photo_id} из локации {location_id}: {e!s}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при удалении фотографии"
-            )
+            raise InvalidLocationDataError(detail="Ошибка при удалении фотографии")
 
     async def update_photo_caption(
         self,
@@ -254,9 +250,7 @@ class LocationService:
         except Exception as e:
             await self.session.rollback()
             logger.error(f"Ошибка при обновлении подписи к фото {photo_id}: {e!s}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при обновлении подписи к фото"
-            )
+            raise InvalidLocationDataError(detail="Ошибка при обновлении подписи к фото")
 
     async def reorder_photos(
         self,
@@ -298,9 +292,7 @@ class LocationService:
         except Exception as e:
             await self.repository.rollback()
             logger.error(f"Ошибка при изменении порядка фотографий: {e!s}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при изменении порядка фотографий"
-            )
+            raise InvalidLocationDataError(detail="Ошибка при изменении порядка фотографий")
 
     async def get_location_by_id(self, location_id: UUID) -> Location | None:
         """Получает локацию по ID"""
