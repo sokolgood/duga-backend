@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -9,12 +10,19 @@ from src.api.v1.api import api_router
 from src.api.v1.errors import exception_handlers
 from src.core.config import get_settings
 
+# Настройка логгирования
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 settings = get_settings()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):  # noqa: ANN201
+async def lifespan(app: FastAPI):
+    logger.info("Application startup")
     yield
+    logger.info("Application shutdown")
 
 
 app = FastAPI(
