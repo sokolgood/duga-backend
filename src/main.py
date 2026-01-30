@@ -14,15 +14,7 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # noqa: ANN201
-    # log about starting a project
-
-    # app.state.redis_client = ...
-
-    # logger.info("FastAPI app started")
     yield
-
-    # Этот код исполняется uvicorn после выключения сервиса
-    # logger.info("Shutting down FastAPI app...")
 
 
 app = FastAPI(
