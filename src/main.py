@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -9,21 +10,17 @@ from src.api.v1.api import api_router
 from src.api.v1.errors import exception_handlers
 from src.core.config import get_settings
 
-settings = get_settings()
+# Настройка логгирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
+settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # noqa: ANN201
-    # log about starting a project
-
-    # app.state.redis_client = ...
-
-    # logger.info("FastAPI app started")
+    logger.info("Starting FastAPI app...")
     yield
-
-    # Этот код исполняется uvicorn после выключения сервиса
-    # logger.info("Shutting down FastAPI app...")
-
+    logger.info("Shutting down FastAPI app...")
 
 app = FastAPI(
     title=settings.project_name,
@@ -51,11 +48,9 @@ app.mount("/static", StaticFiles(directory=Path("src/static")), name="static_ass
 
 app.include_router(api_router, prefix=settings.api_version)
 
-
 @app.get("/")
 async def root() -> dict[str, str]:
     return {"message": "duga backend"}
-
 
 @app.get("/health")
 def health() -> Response:
