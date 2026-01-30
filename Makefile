@@ -16,10 +16,14 @@ lint-fix: ## Run linter with auto-fix
 format: ## Format code with ruff
 	poetry run ruff format .
 
-test: ## Run tests (mocked for now)
-	@echo "Running tests..."
-	@echo "Note: Unit tests are not yet implemented"
-	@echo "When tests are added, run: poetry run pytest"
+test: ## Run tests
+	poetry run pytest tests/ -v
+
+test-cov: ## Run tests with coverage report
+	poetry run pytest tests/ --cov=src --cov-report=term-missing --cov-report=html
+
+test-watch: ## Run tests in watch mode
+	poetry run pytest-watch tests/
 
 run: ## Run the application
 	poetry run uvicorn src.main:app --reload --host 0.0.0.0 --port 8080
