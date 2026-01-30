@@ -30,7 +30,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.BOT_TOKEN }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}  # Опционально
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}  # Optional
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }} # Optional
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }} # Optional
+          LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }} # Optional
           REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
@@ -39,6 +42,9 @@ jobs:
             -e LLM_API_KEY \
             -e LLM_BASE_URL \
             -e LLM_MODEL_NAME=gpt-5-mini \
+            -e LANGFUSE_SECRET_KEY \
+            -e LANGFUSE_PUBLIC_KEY \
+            -e LANGFUSE_BASE_URL \
             -e REPO \
             -e REPO_PATH=/repo \
             -v "${{ github.workspace }}:/repo" \
