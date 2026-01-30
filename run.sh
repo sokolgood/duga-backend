@@ -1,1 +1,1 @@
-poetry run uvicorn src.main:app --host 127.0.0.1 --port 8080
+poetry run uvicorn src.api.v1.api:api_router --host 127.0.0.1 --port 8080
