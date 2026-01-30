@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  linting_and_tests:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - name: Lint
