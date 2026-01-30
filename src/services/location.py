@@ -35,8 +35,9 @@ class LocationService:
         maps_url: HttpUrl | None = None,
     ) -> Location:
         try:
+            location_id = uuid4()
             location = Location(
-                id=str(uuid4()),  # Генерируем ID заранее для создания папки
+                id=location_id,
                 name=name,
                 latitude=latitude,
                 longitude=longitude,
@@ -59,7 +60,7 @@ class LocationService:
             raise InvalidLocationDataError(detail=str(e))
 
     async def get_location(self, location_id: str) -> Location | None:
-        location = await self.repository.get_by_id(location_id)
+        location = await self.repository.get_by_id(UUID(location_id))
         if not location:
             raise LocationNotFoundError()
         return location
@@ -83,7 +84,7 @@ class LocationService:
     ) -> Location | None:
         """Обновляет данные локации"""
         try:
-            location = await self.repository.get_by_id(location_id)
+            location = await self.repository.get_by_id(UUID(location_id))
             if not location:
                 raise LocationNotFoundError()
 
@@ -105,7 +106,7 @@ class LocationService:
 
             location = await self.repository.update(location, update_data)
             await self.repository.commit()
-            await self.repository.refresh(location)
+            # await self.repository.refresh(location)
             return location
 
         except LocationNotFoundError:
@@ -123,7 +124,7 @@ class LocationService:
             # Удаляем все фото
             for photo in location.photos:
                 try:
-                    await self.file_storage.delete_file(location_id, photo.id)
+                    await self.file_storage.delete_file(location_id, str(photo.id))
                 except Exception as e:
                     logger.error(f"Ошибка при удалении файла {photo.id}: {e!s}")
 
@@ -154,16 +155,16 @@ class LocationService:
             try:
                 for i, file in enumerate(files):
                     photo_id = uuid4()
-                    relative_url = await self.file_storage.save_file(file, location_id, photo_id)
+                    relative_url = await self.file_storage.save_file(file, location_id, str(photo_id))
                     # Формируем полный URL
                     full_url = f"{self.base_url}{relative_url}"
 
                     new_photos.append(Photo(id=photo_id, photo_url=full_url, order=max_order + i + 1))
-                    saved_files.append((location_id, photo_id))
+                    saved_files.append((location_id, str(photo_id)))
 
                 location.photos.extend(new_photos)
                 await self.session.commit()
-                await self.session.refresh(location)
+                # await self.session.refresh(location)
                 return location
 
             except Exception as e:
@@ -211,7 +212,7 @@ class LocationService:
                     photo.order -= 1
 
             await self.session.commit()
-            await self.session.refresh(location)
+            # await self.session.refresh(location)
             return location
 
         except (LocationNotFoundError, PhotoNotFoundError):
@@ -245,7 +246,7 @@ class LocationService:
             photo.order = current_order  # Явно устанавливаем порядок обратно
 
             await self.session.commit()
-            await self.session.refresh(location)
+            # await self.session.refresh(location)
             return location
 
         except (LocationNotFoundError, PhotoNotFoundError):
@@ -264,9 +265,7 @@ class LocationService:
     ) -> Location:
         """Изменяет порядок фотографий"""
         try:
-            location = await self.repository.get_by_id(location_id)
-            if not location:
-                raise LocationNotFoundError()
+            location = await self.get_location(location_id)
 
             if not photo_order:
                 raise InvalidLocationDataError("Список photo_order не может быть пустым")
@@ -290,7 +289,7 @@ class LocationService:
                 await self.repository.update_photo(photo)
 
             await self.repository.commit()
-            await self.repository.refresh(location)
+            # await self.repository.refresh(location)
             return location
 
         except (LocationNotFoundError, PhotoNotFoundError, InvalidLocationDataError):
@@ -320,7 +319,7 @@ class LocationService:
         tags: list[str] | None = None,
         coordinates: tuple[float, float] | None = None,
         radius_km: float = 5.0,
-    ) -> list[Location]:
+    ) -> list[tuple[Location, float | None]]:
         """
         Получает отфильтрованный список локаций
 
@@ -329,6 +328,9 @@ class LocationService:
             tags: список тегов для фильтрации
             coordinates: (lat, lng) координаты центра поиска
             radius_km: радиус поиска в километрах
+
+        Returns:
+            list[tuple[Location, float | None]]: Список кортежей (локация, расстояние в км)
         """
         return await self.repository.get_filtered(
             exclude_ids=exclude_ids, tags=tags, coordinates=coordinates, radius_km=radius_km

@@ -1,7 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import and_, func, or_, select
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import String, and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.expression import cast
@@ -26,7 +25,7 @@ class LocationRepository:
 
     async def get_by_id(self, location_id: UUID) -> Location | None:
         """Получает локацию по ID"""
-        query = select(Location).where(Location.id == location_id)
+        query = select(Location).options(selectinload(Location.photos)).where(Location.id == location_id)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
@@ -71,9 +70,11 @@ class LocationRepository:
         # Фильтруем по тегам
         if tags:
             # Для поиска локаций с хотя бы одним из тегов
+            # В SQLite используем проверку наличия строки в JSON через cast в String
             tag_conditions = []
             for tag in tags:
-                tag_conditions.append(Location.tags.cast(JSONB).contains([tag]))
+                # Проверяем наличие тега в JSON массиве
+                tag_conditions.append(cast(Location.tags, String).contains(f'"{tag}"'))
             conditions.append(or_(*tag_conditions))
 
         # Применяем базовые условия
@@ -123,7 +124,8 @@ class LocationRepository:
         query = select(Location).options(selectinload(Location.photos))
 
         if category:
-            query = query.where(Location.categories.contains([category]))
+            # В SQLite используем проверку наличия строки в JSON через cast в String
+            query = query.where(cast(Location.categories, String).contains(f'"{category}"'))
 
         query = query.offset(skip).limit(limit)
         result = await self.session.execute(query)
@@ -151,6 +153,7 @@ class LocationRepository:
 
     async def commit(self) -> None:
         """Сохраняет изменения в БД"""
+        await self.session.flush()
         await self.session.commit()
 
     async def rollback(self) -> None:
