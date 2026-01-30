@@ -75,33 +75,24 @@ src/
 
 ## Running Tools
 
+### Install dependencies
+```bash
+make install
+```
+
 ### Linting
 ```bash
 make lint
-# or
-poetry run ruff check .
-poetry run ruff check --fix .  # auto-fix
 ```
 
 ### Formatting
 ```bash
-poetry run ruff format .
+make format
 ```
 
 ### Testing
 ```bash
 make test
-# or
-poetry run pytest
-```
-
-### Database Migrations
-```bash
-# Create migration
-poetry run alembic revision --autogenerate -m "description"
-
-# Apply migrations
-poetry run alembic upgrade head
 ```
 
 ## Key Rules
